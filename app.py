@@ -59,9 +59,8 @@ STATUS_META: dict[str, tuple[str, str]] = {
 SETTINGS_FILE = Path(__file__).parent / "settings.json"
 
 TTS_VOICES = {
-    "Henri (homme FR)":   "fr-FR-HenriNeural",
-    "Denise (femme FR)":  "fr-FR-DeniseNeural",
-    "Antoine (homme FR)": "fr-FR-AntoineNeural",
+    "Henri (homme FR)":  "fr-FR-HenriNeural",
+    "Denise (femme FR)": "fr-FR-DeniseNeural",
 }
 WHISPER_MODELS = ["tiny", "base", "small", "medium", "large-v3"]
 
