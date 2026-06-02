@@ -35,3 +35,14 @@ desktop.ini
 
 # Backups
 *.bak
+
+# Notes internes dev
+CLAUDE.md
+
+# Scripts utilitaires locaux uniquement
+install.bat
+activer_micro.bat
+lancer.bat
+gui.py
+main.py
+agent/

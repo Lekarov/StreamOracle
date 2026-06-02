@@ -1,4 +1,4 @@
-"""Jean-Kulki — Interface graphique."""
+"""StreamOracle — Interface graphique."""
 from __future__ import annotations
 
 import json
@@ -13,9 +13,9 @@ import tkinter as tk
 import sounddevice as sd
 
 import config
-from agent.listener import Listener
-from agent.brain    import Brain
-from agent.voice    import Voice
+from core.listener import Listener
+from core.brain    import Brain
+from core.voice    import Voice
 
 # ── Palette ──────────────────────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
