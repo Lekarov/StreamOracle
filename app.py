@@ -88,8 +88,8 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("Jean-Kulki — Pestovich")
-        self.geometry("960x680")
-        self.minsize(800, 580)
+        self.geometry("960x760")
+        self.minsize(860, 660)
         self.configure(fg_color=BG)
 
         # État
@@ -217,7 +217,7 @@ class App(ctk.CTk):
         ).pack(anchor="w", padx=12, pady=(8, 2))
 
         self._log = ctk.CTkTextbox(
-            log_frame, height=150, fg_color=SURF2, text_color=TEXT2,
+            log_frame, height=110, fg_color=SURF2, text_color=TEXT2,
             font=ctk.CTkFont("Consolas", 10), wrap="word",
             border_width=0, corner_radius=8,
         )
@@ -330,22 +330,12 @@ class App(ctk.CTk):
             font=ctk.CTkFont("Segoe UI", 10), corner_radius=6, height=34,
             border_color=BORDER2, border_width=1,
             command=self._clear_history,
-        ).pack(fill="x", padx=12, pady=(2, 4))
-
-        # Bouton diagnostic micros
-        ctk.CTkButton(
-            left, text="🔍  Lister les micros",
-            fg_color=SURF2, hover_color=BORDER2, text_color=TEXT2,
-            font=ctk.CTkFont("Segoe UI", 10), corner_radius=6, height=34,
-            border_color=BORDER2, border_width=1,
-            command=self._list_mics_to_log,
-        ).pack(fill="x", padx=12, pady=(0, 12))
+        ).pack(fill="x", padx=12, pady=(2, 12))
 
     def _build_right(self, parent: ctk.CTkFrame) -> None:
-        right = ctk.CTkScrollableFrame(
+        right = ctk.CTkFrame(
             parent, fg_color=SURF, corner_radius=8,
             border_color=BORDER, border_width=1,
-            scrollbar_button_color=BORDER2,
         )
         right.grid(row=0, column=1, sticky="nsew")
 
@@ -353,15 +343,15 @@ class App(ctk.CTk):
             ctk.CTkLabel(
                 right, text=label,
                 font=ctk.CTkFont("Segoe UI", 9, "bold"), text_color=MUTED,
-            ).pack(anchor="w", padx=16, pady=(16, 6))
+            ).pack(anchor="w", padx=16, pady=(10, 4))
             ctk.CTkFrame(right, height=1, fg_color=BORDER, corner_radius=0).pack(
-                fill="x", padx=12, pady=(0, 10))
+                fill="x", padx=12, pady=(0, 8))
 
         def slider_row(parent_frame, label: str, var: tk.Variable,
                        from_: float, to: float, fmt: str = "{:.3f}",
                        steps: int = 100) -> None:
             row = ctk.CTkFrame(parent_frame, fg_color="transparent")
-            row.pack(fill="x", padx=16, pady=(0, 10))
+            row.pack(fill="x", padx=16, pady=(0, 6))
 
             top = ctk.CTkFrame(row, fg_color="transparent")
             top.pack(fill="x")
@@ -389,7 +379,7 @@ class App(ctk.CTk):
                    self._threshold, 0.002, 0.08, "{:.3f}", 78)
         ctk.CTkLabel(right, text="↑ Augmente si trop de faux déclenchements",
                      font=ctk.CTkFont("Segoe UI", 9), text_color=MUTED,
-                     ).pack(anchor="w", padx=16, pady=(0, 8))
+                     ).pack(anchor="w", padx=16, pady=(0, 4))
 
         slider_row(right, "Durée silence pour couper (s)",
                    self._silence_dur, 0.5, 3.0, "{:.1f}s", 25)
@@ -398,7 +388,7 @@ class App(ctk.CTk):
         section("MODÈLE WHISPER")
 
         model_row = ctk.CTkFrame(right, fg_color="transparent")
-        model_row.pack(fill="x", padx=16, pady=(0, 4))
+        model_row.pack(fill="x", padx=16, pady=(0, 2))
         ctk.CTkLabel(model_row, text="Modèle",
                      font=ctk.CTkFont("Segoe UI", 11), text_color=TEXT,
                      ).pack(side="left")
@@ -414,13 +404,13 @@ class App(ctk.CTk):
         ctk.CTkLabel(right,
                      text="tiny=rapide/imprécis  ·  medium=bon équilibre  ·  large-v3=meilleur",
                      font=ctk.CTkFont("Segoe UI", 9), text_color=MUTED,
-                     ).pack(anchor="w", padx=16, pady=(0, 8))
+                     ).pack(anchor="w", padx=16, pady=(0, 4))
 
         # ── Section Voix ──────────────────────────────────────────────────
         section("VOIX TTS")
 
         voice_row = ctk.CTkFrame(right, fg_color="transparent")
-        voice_row.pack(fill="x", padx=16, pady=(0, 10))
+        voice_row.pack(fill="x", padx=16, pady=(0, 6))
         ctk.CTkLabel(voice_row, text="Voix",
                      font=ctk.CTkFont("Segoe UI", 11), text_color=TEXT,
                      ).pack(side="left")
@@ -442,7 +432,7 @@ class App(ctk.CTk):
 
         # ── Bouton Sauvegarder ────────────────────────────────────────────
         ctk.CTkFrame(right, height=1, fg_color=BORDER, corner_radius=0).pack(
-            fill="x", padx=12, pady=(6, 12))
+            fill="x", padx=12, pady=(4, 10))
 
         ctk.CTkButton(
             right, text="💾  Sauvegarder les réglages",
@@ -450,7 +440,7 @@ class App(ctk.CTk):
             font=ctk.CTkFont("Segoe UI", 11, "bold"),
             corner_radius=6, height=44,
             command=self._save_settings,
-        ).pack(fill="x", padx=16, pady=(0, 16))
+        ).pack(fill="x", padx=16, pady=(0, 12))
 
     # ── VU-mètre ──────────────────────────────────────────────────────────────
 
