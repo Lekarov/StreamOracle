@@ -1,6 +1,5 @@
 # Secrets
 .env
-.env.example
 
 # Réglages utilisateur (générés automatiquement)
 settings.json
