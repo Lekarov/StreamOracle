@@ -37,7 +37,7 @@ Entièrement personnalisable : personnalité, wake words, voix, seuils de détec
 - **VAD énergie RMS** — seuil réglable en live via slider
 - **Transcription locale** — Faster-Whisper, GPU ou CPU avec fallback automatique
 - **Personnalité Claude** — system prompt entièrement personnalisable dans `core/brain.py`
-- **TTS multi-voix** — Henri, Denise, Antoine (FR) — extensible
+- **TTS multi-voix** — Henri, Denise (FR) — extensible
 - **Historique multi-tours** — mémorise les N derniers échanges
 - **Journal coloré** — log temps réel des segments, niveaux, réponses
 - **Réglages persistants** — sauvegardés automatiquement dans `settings.json`
@@ -56,7 +56,6 @@ StreamOracle/
 ├── config.py           # Tous les paramètres centralisés
 ├── start.bat           # Lancement Windows (double-clic)
 ├── requirements.txt
-├── .env.example
 └── .gitignore
 ```
 
@@ -91,7 +90,7 @@ pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
 
 ### 3. Configurer la clé API
 
-Copie `.env.example` en `.env` et remplis ta clé :
+Crée un fichier `.env` à la racine du projet :
 
 ```
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
@@ -156,7 +155,6 @@ Règles efficaces :
 **VU-mètre à 0**
 - Vérifie l'accès micro Windows (voir section ci-dessus)
 - Vérifie le bon périphérique dans le dropdown "Entrée"
-- Clique "🔍 Lister les micros" pour voir tous les index disponibles
 
 **Erreur CUDA / cublas**
 - Installe : `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`
