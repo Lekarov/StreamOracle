@@ -87,8 +87,8 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("Jean-Kulki — Pestovich")
-        self.geometry("960x760")
-        self.minsize(860, 660)
+        self.geometry("960x820")
+        self.minsize(860, 720)
         self.configure(fg_color=BG)
 
         # État
