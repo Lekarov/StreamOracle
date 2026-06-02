@@ -1,9 +1,12 @@
 """StreamOracle — Interface graphique."""
 from __future__ import annotations
 
+import glob
 import json
+import os
 import queue
 import sys
+import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -17,31 +20,37 @@ from core.listener import Listener
 from core.brain    import Brain
 from core.voice    import Voice
 
-# ── Palette ──────────────────────────────────────────────────────────────────
+# ── Palette FILAMENT ─────────────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-BG      = "#050507"
-SURF    = "#0d0d12"
-SURF2   = "#13131a"
-SURF3   = "#1a1a24"
-BORDER  = "#1f1f2e"
-BORDER2 = "#2d2d42"
-ACCENT  = "#6366f1"
-ACCHOV  = "#4f52d9"
-TEXT    = "#f1f1f3"
-TEXT2   = "#a1a1b5"
-MUTED   = "#5c5c78"
-SUCCESS = "#10b981"
-WARN    = "#f59e0b"
-DANGER  = "#f43f5e"
-INFO    = "#38bdf8"
+BG      = "#0A0A0B"   # plateau OLED
+SURF    = "#101013"   # panneaux
+SURF2   = "#17171B"   # champs / dropdowns
+SURF3   = "#17171B"   # idem
+BORDER  = "#232327"   # hairline
+BORDER2 = "#2E2E34"   # contours interactifs
+ACCENT  = "#FF8F3A"   # sodium — signature
+ACCHOV  = "#FFA660"   # hover
+ACCPRS  = "#E0741F"   # pressed
+TEXT    = "#F4EFE9"   # primaire tiède
+TEXT2   = "#9A958D"   # secondaire
+MUTED   = "#5E5A54"   # légendes
+SUCCESS = "#46C08A"   # idle / succès
+WARN    = "#FFC24B"   # wake / parole
+DANGER  = "#FF5E48"   # erreur / stop
+INFO    = "#3FA7C4"   # traitement
+VU_LOW  = "#46C08A"   # silence
+VU_MID  = "#FF8F3A"   # parole normale
+VU_CLIP = "#FF5E48"   # clip
+VU_PEAK = "#FFE0B8"   # peak hold
+VU_OFF  = "#1A1A1E"   # segment éteint
 
 STATUS_META: dict[str, tuple[str, str]] = {
     "idle":       ("● EN ÉCOUTE",    SUCCESS),
     "wake":       ("● WAKE WORD",    WARN),
-    "processing": ("● TRAITEMENT",   ACCENT),
-    "speaking":   ("● PAROLE",       DANGER),
+    "processing": ("● TRAITEMENT",   INFO),
+    "speaking":   ("● PAROLE",       WARN),
     "loading":    ("● CHARGEMENT…",  INFO),
     "stopped":    ("● ARRÊTÉ",       MUTED),
     "error":      ("● ERREUR",       DANGER),
@@ -163,24 +172,26 @@ class App(ctk.CTk):
 
     def _build_ui(self) -> None:
         # --- Header ---
-        hdr = ctk.CTkFrame(self, fg_color=SURF, corner_radius=0, height=54)
+        hdr = ctk.CTkFrame(self, fg_color=SURF, corner_radius=0, height=64)
         hdr.pack(fill="x")
         hdr.pack_propagate(False)
 
         ctk.CTkLabel(
-            hdr, text="JEAN-KULKI", font=ctk.CTkFont("Segoe UI", 18, "bold"),
-            text_color=TEXT,
-        ).pack(side="left", padx=20)
+            hdr, text="JEAN-KULKI", font=ctk.CTkFont("Segoe UI", 16, "bold"),
+            text_color=ACCENT,
+        ).pack(side="left", padx=24)
         ctk.CTkLabel(
             hdr, text="Assistant vocal · Pestovich",
-            font=ctk.CTkFont("Segoe UI", 10), text_color=TEXT2,
-        ).pack(side="left", padx=(0, 20))
+            font=ctk.CTkFont("Segoe UI", 10), text_color=MUTED,
+        ).pack(side="left", padx=(0, 16))
 
+        badge = ctk.CTkFrame(hdr, fg_color=SURF2, corner_radius=6)
+        badge.pack(side="right", padx=20, pady=16)
         self._status_lbl = ctk.CTkLabel(
-            hdr, text="● ARRÊTÉ",
-            font=ctk.CTkFont("Segoe UI", 11, "bold"), text_color=MUTED,
+            badge, text="● ARRÊTÉ",
+            font=ctk.CTkFont("Segoe UI", 10, "bold"), text_color=MUTED,
         )
-        self._status_lbl.pack(side="right", padx=20)
+        self._status_lbl.pack(padx=12, pady=4)
 
         # Séparateur
         ctk.CTkFrame(self, height=1, fg_color=BORDER, corner_radius=0).pack(fill="x")
@@ -196,7 +207,7 @@ class App(ctk.CTk):
         self._build_right(body)
 
         # --- Journal ---
-        log_frame = ctk.CTkFrame(self, fg_color=SURF, corner_radius=10,
+        log_frame = ctk.CTkFrame(self, fg_color=SURF, corner_radius=8,
                                   border_color=BORDER, border_width=1)
         log_frame.pack(fill="x", padx=16, pady=(0, 12))
 
@@ -221,8 +232,8 @@ class App(ctk.CTk):
         self._log._textbox.tag_configure("ts",    foreground=MUTED)
 
     def _build_left(self, parent: ctk.CTkFrame) -> None:
-        left = ctk.CTkFrame(parent, fg_color=SURF, corner_radius=12,
-                             border_color=BORDER, border_width=1, width=280)
+        left = ctk.CTkFrame(parent, fg_color=SURF, corner_radius=8,
+                             border_color=BORDER, border_width=1, width=300)
         left.grid(row=0, column=0, sticky="ns", padx=(0, 10))
         left.pack_propagate(False)
         left.grid_propagate(False)
@@ -241,10 +252,11 @@ class App(ctk.CTk):
             left,
             values=list(self._mic_devices.keys()),
             variable=self._mic_device_lbl,
-            fg_color=SURF3, button_color=SURF3, button_hover_color=BORDER2,
+            fg_color=SURF2, button_color=ACCENT, button_hover_color=ACCHOV,
             dropdown_fg_color=SURF2, text_color=TEXT2,
             font=ctk.CTkFont("Segoe UI", 9),
-            width=256,
+            height=34, corner_radius=6,
+            width=276,
         ).pack(padx=12, pady=(0, 4))
 
         # Sortie voix
@@ -255,19 +267,20 @@ class App(ctk.CTk):
             left,
             values=list(self._out_devices.keys()),
             variable=self._out_device_lbl,
-            fg_color=SURF3, button_color=SURF3, button_hover_color=BORDER2,
+            fg_color=SURF2, button_color=ACCENT, button_hover_color=ACCHOV,
             dropdown_fg_color=SURF2, text_color=TEXT2,
             font=ctk.CTkFont("Segoe UI", 9),
-            width=256,
+            height=34, corner_radius=6,
+            width=276,
         ).pack(padx=12, pady=(0, 6))
 
         # VU-mètre
-        vu_frame = ctk.CTkFrame(left, fg_color=SURF2, corner_radius=8, height=36)
+        vu_frame = ctk.CTkFrame(left, fg_color=BG, corner_radius=6, height=40)
         vu_frame.pack(fill="x", padx=12, pady=(0, 4))
         vu_frame.pack_propagate(False)
 
         self._vu_canvas = tk.Canvas(
-            vu_frame, bg=SURF2, highlightthickness=0, height=36,
+            vu_frame, bg=BG, highlightthickness=0, height=40,
         )
         self._vu_canvas.pack(fill="both", expand=True, padx=4, pady=4)
 
@@ -294,9 +307,9 @@ class App(ctk.CTk):
         # Bouton Démarrer / Arrêter
         self._start_btn = ctk.CTkButton(
             left, text="▶  DÉMARRER",
-            fg_color=ACCENT, hover_color=ACCHOV, text_color=TEXT,
+            fg_color=ACCENT, hover_color=ACCHOV, text_color="#0A0A0B",
             font=ctk.CTkFont("Segoe UI", 12, "bold"),
-            corner_radius=10, height=42,
+            corner_radius=6, height=44,
             command=self._toggle,
         )
         self._start_btn.pack(fill="x", padx=12, pady=(6, 4))
@@ -304,35 +317,35 @@ class App(ctk.CTk):
         # Bouton test voix
         ctk.CTkButton(
             left, text="🔊  Test voix",
-            fg_color=SURF3, hover_color="#20202e", text_color=TEXT2,
-            font=ctk.CTkFont("Segoe UI", 10), corner_radius=8, height=32,
-            border_color=BORDER, border_width=1,
+            fg_color=SURF2, hover_color=BORDER2, text_color=TEXT2,
+            font=ctk.CTkFont("Segoe UI", 10), corner_radius=6, height=34,
+            border_color=BORDER2, border_width=1,
             command=self._test_voice,
         ).pack(fill="x", padx=12, pady=2)
 
         # Bouton vider historique
         ctk.CTkButton(
             left, text="🗑  Vider l'historique",
-            fg_color=SURF3, hover_color="#20202e", text_color=TEXT2,
-            font=ctk.CTkFont("Segoe UI", 10), corner_radius=8, height=32,
-            border_color=BORDER, border_width=1,
+            fg_color=SURF2, hover_color=BORDER2, text_color=TEXT2,
+            font=ctk.CTkFont("Segoe UI", 10), corner_radius=6, height=34,
+            border_color=BORDER2, border_width=1,
             command=self._clear_history,
         ).pack(fill="x", padx=12, pady=(2, 4))
 
         # Bouton diagnostic micros
         ctk.CTkButton(
             left, text="🔍  Lister les micros",
-            fg_color=SURF3, hover_color="#20202e", text_color=TEXT2,
-            font=ctk.CTkFont("Segoe UI", 10), corner_radius=8, height=32,
-            border_color=BORDER, border_width=1,
+            fg_color=SURF2, hover_color=BORDER2, text_color=TEXT2,
+            font=ctk.CTkFont("Segoe UI", 10), corner_radius=6, height=34,
+            border_color=BORDER2, border_width=1,
             command=self._list_mics_to_log,
         ).pack(fill="x", padx=12, pady=(0, 12))
 
     def _build_right(self, parent: ctk.CTkFrame) -> None:
         right = ctk.CTkScrollableFrame(
-            parent, fg_color=SURF, corner_radius=12,
+            parent, fg_color=SURF, corner_radius=8,
             border_color=BORDER, border_width=1,
-            scrollbar_button_color=SURF3,
+            scrollbar_button_color=BORDER2,
         )
         right.grid(row=0, column=1, sticky="nsew")
 
@@ -391,9 +404,10 @@ class App(ctk.CTk):
                      ).pack(side="left")
         ctk.CTkOptionMenu(
             model_row, values=WHISPER_MODELS, variable=self._whisper_model,
-            fg_color=SURF3, button_color=SURF3, button_hover_color=BORDER2,
+            fg_color=SURF2, button_color=ACCENT, button_hover_color=ACCHOV,
             dropdown_fg_color=SURF2, text_color=TEXT,
             font=ctk.CTkFont("Segoe UI", 10),
+            height=34, corner_radius=6,
             width=140,
         ).pack(side="right")
 
@@ -413,9 +427,10 @@ class App(ctk.CTk):
         ctk.CTkOptionMenu(
             voice_row, values=list(TTS_VOICES.keys()),
             variable=self._tts_voice_lbl,
-            fg_color=SURF3, button_color=SURF3, button_hover_color=BORDER2,
+            fg_color=SURF2, button_color=ACCENT, button_hover_color=ACCHOV,
             dropdown_fg_color=SURF2, text_color=TEXT,
             font=ctk.CTkFont("Segoe UI", 10),
+            height=34, corner_radius=6,
             width=200,
         ).pack(side="right")
 
@@ -431,9 +446,9 @@ class App(ctk.CTk):
 
         ctk.CTkButton(
             right, text="💾  Sauvegarder les réglages",
-            fg_color=ACCENT, hover_color=ACCHOV, text_color=TEXT,
+            fg_color=ACCENT, hover_color=ACCHOV, text_color="#0A0A0B",
             font=ctk.CTkFont("Segoe UI", 11, "bold"),
-            corner_radius=10, height=38,
+            corner_radius=6, height=44,
             command=self._save_settings,
         ).pack(fill="x", padx=16, pady=(0, 16))
 
@@ -447,28 +462,12 @@ class App(ctk.CTk):
             return
 
         c.delete("all")
+        c.create_rectangle(0, 0, w, h, fill=BG, outline="")
 
-        # Fond
-        c.create_rectangle(0, 0, w, h, fill=SURF3, outline="")
-
-        # Barre niveau
         rms       = self._current_rms
         thr       = self._threshold.get()
         max_level = max(thr * 4, 0.08)
         ratio     = min(rms / max_level, 1.0)
-        bar_w     = int(ratio * w)
-
-        if rms < thr * 0.6:
-            color = "#10b981"
-        elif rms < thr:
-            color = "#84cc16"
-        elif rms < thr * 1.4:
-            color = "#f59e0b"
-        else:
-            color = "#f43f5e"
-
-        if bar_w > 0:
-            c.create_rectangle(0, 2, bar_w, h - 2, fill=color, outline="")
 
         # Peak hold
         if rms > self._peak_rms:
@@ -479,13 +478,36 @@ class App(ctk.CTk):
         else:
             self._peak_rms = max(self._peak_rms - 0.001, 0)
 
-        pk_x = int(min(self._peak_rms / max_level, 1.0) * w)
-        if pk_x > 0:
-            c.create_line(pk_x, 2, pk_x, h - 2, fill=TEXT, width=2)
+        # 28 segments — 3 zones : LOW 0-50 % · MID 50-80 % · CLIP 80-100 %
+        N       = 28
+        gap     = 2
+        seg_w   = max((w - gap * (N - 1)) / N, 1)
+        seg_h   = h - 4
+        y0      = 2
+        lit     = int(ratio * N)
+        pk_seg  = int(min(self._peak_rms / max_level, 1.0) * (N - 1))
+        low_end = int(N * 0.50)
+        mid_end = int(N * 0.80)
 
-        # Ligne seuil
+        for i in range(N):
+            x0 = int(i * (seg_w + gap))
+            x1 = int(x0 + seg_w)
+            if i == pk_seg and self._peak_rms > 0.001:
+                color = VU_PEAK
+            elif i < lit:
+                if i < low_end:
+                    color = VU_LOW
+                elif i < mid_end:
+                    color = VU_MID
+                else:
+                    color = VU_CLIP
+            else:
+                color = VU_OFF
+            c.create_rectangle(x0, y0, x1, y0 + seg_h, fill=color, outline="")
+
+        # Ligne seuil — amber WARN
         thr_x = int(min(thr / max_level, 1.0) * w)
-        c.create_line(thr_x, 0, thr_x, h, fill=WARN, width=1, dash=(4, 3))
+        c.create_line(thr_x, 0, thr_x, h, fill=WARN, width=1, dash=(3, 2))
 
     # ── Polling / Events ──────────────────────────────────────────────────────
 
@@ -566,9 +588,9 @@ class App(ctk.CTk):
             return
 
         self._running = True
-        self._start_btn.configure(text="⏹  ARRÊTER", fg_color="#3d1520",
-                                   hover_color="#4d1f2a", text_color=DANGER,
-                                   border_color="#5c2535", border_width=1)
+        self._start_btn.configure(text="⏹  ARRÊTER", fg_color="#1E0C0C",
+                                   hover_color="#2A1212", text_color=DANGER,
+                                   border_color=DANGER, border_width=1)
 
         # Mettre à jour config depuis les sliders
         config.SILENCE_RMS_THRESHOLD = self._threshold.get()
@@ -632,7 +654,7 @@ class App(ctk.CTk):
             self._listener.stop()
             self._listener = None
         self._start_btn.configure(text="▶  DÉMARRER", fg_color=ACCENT,
-                                   hover_color=ACCHOV, text_color=TEXT, border_width=0)
+                                   hover_color=ACCHOV, text_color="#0A0A0B", border_width=0)
         self._emit_status("stopped")
         self._emit_log("Jean-Kulki arrêté.", "sys")
 
@@ -710,7 +732,19 @@ class App(ctk.CTk):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+def _cleanup_temp_files() -> None:
+    tmp = tempfile.gettempdir()
+    for pattern in ("streamoracle_*.mp3", "streamoracle_*.wav"):
+        for f in glob.glob(os.path.join(tmp, pattern)):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+
+
 def main() -> None:
+    _cleanup_temp_files()
+
     if not config.ANTHROPIC_API_KEY:
         print("ERREUR : ANTHROPIC_API_KEY manquant dans .env")
 
