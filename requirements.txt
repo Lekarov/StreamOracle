@@ -1,0 +1,14 @@
+# Jean-Kulki — dépendances Python
+# Installation : pip install -r requirements.txt
+
+anthropic>=0.40.0
+faster-whisper>=1.0.0
+sounddevice>=0.4.6
+numpy>=1.24
+edge-tts>=6.1.9
+miniaudio>=1.57
+python-dotenv>=1.0.0
+
+# Note CUDA (GPU NVIDIA) :
+# faster-whisper détecte CUDA automatiquement si installé.
+# Si erreur CUDA, installe les libs : pip install nvidia-cublas-cu12 nvidia-cudnn-cu12

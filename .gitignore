@@ -1,0 +1,37 @@
+# Secrets
+.env
+
+# Réglages utilisateur (générés automatiquement)
+settings.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Audio temporaire
+*.mp3
+*.wav
+
+# Modèles téléchargés
+models/
+
+# Environnements virtuels
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backups
+*.bak
