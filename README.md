@@ -56,7 +56,7 @@ StreamOracle/
 ├── config.py           # Tous les paramètres centralisés
 ├── start.bat           # Lancement Windows (double-clic)
 ├── requirements.txt
-├── .env                # À créer — non versionné (contient ta clé API)
+├── .env.example        # À créer — non versionné (contient ta clé API)
 └── .gitignore
 ```
 
@@ -91,7 +91,7 @@ pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
 
 ### 3. Configurer la clé API
 
-Crée un fichier `.env` à la racine du projet :
+Crée un fichier `.env.example` à la racine du projet :
 
 ```
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
