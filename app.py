@@ -198,7 +198,7 @@ class App(ctk.CTk):
 
         # --- Corps ---
         body = ctk.CTkFrame(self, fg_color="transparent")
-        body.pack(fill="both", expand=True, padx=16, pady=12)
+        body.pack(fill="x", padx=16, pady=12)
         body.columnconfigure(0, weight=0)   # panel gauche fixe
         body.columnconfigure(1, weight=1)   # panel droite flex
         body.rowconfigure(0, weight=1)
