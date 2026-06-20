@@ -2,6 +2,7 @@
 # Installation : pip install -r requirements.txt
 
 anthropic>=0.40.0
+customtkinter>=5.2.0
 faster-whisper>=1.0.0
 sounddevice>=0.4.6
 numpy>=1.24

@@ -91,13 +91,21 @@ pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
 
 ### 3. Configurer la clé API
 
-Crée un fichier `.env.example` à la racine du projet :
+Copie le fichier template et remplis ta clé :
+
+```bash
+copy .env.example .env
+```
+
+Puis édite `.env` :
 
 ```
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
 ```
 
 Obtenir une clé : [console.anthropic.com](https://console.anthropic.com)
+
+> `.env` est dans `.gitignore` — ta clé ne sera jamais commitée.
 
 ### 4. Lancer
 
