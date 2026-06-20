@@ -192,3 +192,9 @@ Claude Haiku est le modèle le moins cher d'Anthropic.
 ## Licence
 
 MIT — libre d'utilisation, modification et redistribution.
+
+---
+
+## 🔗 Liens
+
+- 🎮 Twitch : [twitch.tv/Pestovich](https://twitch.tv/Pestovich)
