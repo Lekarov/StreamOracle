@@ -99,6 +99,8 @@ class App(ctk.CTk):
         self._current_rms  = 0.0
         self._peak_rms     = 0.0
         self._peak_decay   = 0.0
+        self._poll_tick    = 0
+        self._zero_ticks   = 0
 
         # Objets agent
         self._listener: Listener | None = None
@@ -272,6 +274,15 @@ class App(ctk.CTk):
             height=34, corner_radius=6,
             width=276,
         ).pack(padx=12, pady=(0, 6))
+
+        # Bouton lister les micros
+        ctk.CTkButton(
+            left, text="🔍  Lister les micros",
+            fg_color=SURF2, hover_color=BORDER2, text_color=TEXT2,
+            font=ctk.CTkFont("Segoe UI", 9), corner_radius=6, height=28,
+            border_color=BORDER2, border_width=1,
+            command=self._list_mics_to_log,
+        ).pack(fill="x", padx=12, pady=(0, 6))
 
         # VU-mètre
         vu_frame = ctk.CTkFrame(left, fg_color=BG, corner_radius=6, height=40)
@@ -515,19 +526,17 @@ class App(ctk.CTk):
         self._thr_lbl.configure(text=f"Seuil : {self._threshold.get():.3f}")
 
         # Log périodique du niveau (toutes les ~5s)
-        self._poll_tick = getattr(self, "_poll_tick", 0) + 1
-        self._zero_ticks = getattr(self, "_zero_ticks", 0)
+        self._poll_tick += 1
         if self._running and self._poll_tick % 125 == 0:
             thr = self._threshold.get()
             rms = self._current_rms
             if rms < 0.001:
                 self._zero_ticks += 1
                 if self._zero_ticks == 1:
-                    self._emit_log("Niveau micro : 0 — aucun signal détecté", "err")
+                    dev = self._mic_device_lbl.get()
+                    self._emit_log(f"Niveau micro : 0 — aucun signal sur « {dev} »", "err")
                 elif self._zero_ticks == 3:
-                    self._emit_log("Toujours 0 — vérifie : Paramètres Windows > Confidentialité > Microphone > autoriser les applis bureau", "err")
-                elif self._zero_ticks == 6:
-                    self._emit_log("Toujours 0 — clique '🔍 Lister les micros' et sélectionne le bon index dans le dropdown", "err")
+                    self._emit_log("Toujours 0 — clique 🔍 pour voir les périphériques dispo et sélectionne le bon dans le dropdown", "err")
             else:
                 self._zero_ticks = 0
                 if rms < thr * 0.3:
@@ -576,7 +585,8 @@ class App(ctk.CTk):
             self._emit_log("ANTHROPIC_API_KEY manquant dans .env", "err")
             return
 
-        self._running = True
+        self._running    = True
+        self._zero_ticks = 0
         self._start_btn.configure(text="⏹  ARRÊTER", fg_color="#1E0C0C",
                                    hover_color="#2A1212", text_color=DANGER,
                                    border_color=DANGER, border_width=1)
@@ -615,6 +625,10 @@ class App(ctk.CTk):
             self._listener.enable_transcription()
 
     def _on_listener_status(self, status: str) -> None:
+        if status.startswith("transcript:"):
+            txt = status[11:]
+            self._emit_log(f"Entendu : « {txt} »", "sys")
+            return
         if status.startswith("segment:"):
             # segment:peak_rms:durée
             parts = status.split(":")

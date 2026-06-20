@@ -184,6 +184,7 @@ class Listener:
                         self._emit_status("processing")
                         text  = self._transcribe(audio)
                         if text:
+                            self._emit_status(f"transcript:{text}")
                             query = self._extract_query(text)
                             if query is not None and self.on_query:
                                 self._emit_status("wake")
@@ -191,6 +192,7 @@ class Listener:
                             else:
                                 self._emit_status("idle")
                         else:
+                            self._emit_status("transcript:(silence / rien reconnu)")
                             self._emit_status("idle")
 
                         recording     = []

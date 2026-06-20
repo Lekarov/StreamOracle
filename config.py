@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv(".env.example") or load_dotenv()  # .env.example prioritaire, .env en fallback
+load_dotenv()  # charge .env (clé réelle) ; .env.example = template seulement
 
 # Anthropic
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
